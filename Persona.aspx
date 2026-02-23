@@ -53,16 +53,17 @@
     <div class="form-group">
         <asp:Label ID="lblTipoDoc" runat="server" Text="Tipo Documento:" CssClass="control-label"></asp:Label>
         <asp:DropDownList ID="ddlTipoDocumento" runat="server" CssClass="form-control">
-            <asp:ListItem Text="Cedula Juridica" Value="0"></asp:ListItem>
+            <asp:ListItem Text="Seleccione un tipo de documento" Value="0"></asp:ListItem>
             <asp:ListItem Text="Cedula Fisica" Value="1"></asp:ListItem>
             <asp:ListItem Text="Pasaporte" Value="2"></asp:ListItem>
+            <asp:ListItem Text="Cedula Juridica" Value="3"></asp:ListItem>
         </asp:DropDownList>
     </div>
         <%--Validar Tipo Documento--%>
         <asp:RequiredFieldValidator ID="rfvTipoDoc" runat="server" 
         CssClass="text-danger"
         Display="Dynamic"
-        ControlToValidate="lblTipoDoc"
+        ControlToValidate="ddlTipoDocumento"
         ErrorMessage="Es necesario indicar el tipo de Documento "></asp:RequiredFieldValidator>
 
     <%--numero documento--%>
