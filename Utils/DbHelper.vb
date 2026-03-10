@@ -1,36 +1,76 @@
 ﻿Imports System.Data.SqlClient
 
 Public Class DbHelper
-    Private ReadOnly connectionString As String = ConfigurationManager.ConnectionStrings("II-46_PROGRAIIIConnectionString").ConnectionString
+    Private connectionString As String = ConfigurationManager.ConnectionStrings("II-46_PROGRAIIIConnectionString").ConnectionString
 
-    Public Function Getconexion() As SqlConnection
-        Return New SqlConnection(connectionString)
-
+    Public Function GetConnection() As SqlConnection
+        Dim conn As New SqlConnection(connectionString)
+        Try
+            conn.Open()
+        Catch ex As Exception
+            conn.Dispose() 'limpia la conexion
+            Throw New Exception("Error al abrir la conexión: " & ex.Message)
+        End Try
+        Return conn
     End Function
 
-    Public Function CrearPersona(persona As Models.Persona) As Integer
-        Dim Sql As String = "
-        INSERT INTO Personas(Nombre, Apellidos, Fecha_Nacimiento, Correo, Numero_Documento, Tipo_Documento)" &
-        "VALUES(@Nombre, @Apellidos, @Fecha_Nacimiento, @Correo, @Numero_Documento, @Tipo_Documento); " &
-        "SELECT SCOPE_IDENTITY();"
+    ' Método para ejecutar un comando SQL (INSERT, UPDATE, DELETE)
+    Public Function ExecuteNonQuery(query As String, parameters As Dictionary(Of String, Object), ByRef errorMessage As String) As Boolean
 
+        If String.IsNullOrWhiteSpace(query) Then
+            Throw New ArgumentException("La consulta no puede estar vacía")
+        End If
+        Using conn As SqlConnection = GetConnection()
+            Using cmd As New SqlCommand(query, conn)
+                If parameters IsNot Nothing Then
+                    For Each p In parameters
+                        cmd.Parameters.AddWithValue(p.Key, p.Value)
+                    Next
+                End If
 
+                Try
+                    cmd.ExecuteNonQuery()
 
-        'CONEXION A LA BASE DE DATOS
-        Using conn As SqlConnection = Getconexion()
-            Using cmd As New SqlCommand(Sql, conn)
-                conn.Open()
-                cmd.Parameters.AddWithValue("@Nombre", persona.Nombre)
-                cmd.Parameters.AddWithValue("@Apellidos", persona.Apellidos)
-                cmd.Parameters.AddWithValue("@Correo", persona.Correo)
-                cmd.Parameters.AddWithValue("@Fecha_Nacimiento", persona.FechaNacimiento)
-                cmd.Parameters.AddWithValue("@Numero_Documento", persona.NumeroDocumento)
-                cmd.Parameters.AddWithValue("@Tipo_Documento", persona.TipoDocumento)
-
-                'Return cmd.ExecuteNonQuery() Devolver la cantidad de lineas insertadas
-                Return Convert.ToInt32(cmd.ExecuteScalar())
+                    Return True
+                Catch ex As Exception
+                    errorMessage = "Error al ejecutar la consulta: " & ex.Message
+                    Return False
+                End Try
             End Using
         End Using
-        Return 0
+    End Function
+
+    Public Function ExecuteQuery(
+    query As String,
+    parameters As Dictionary(Of String, Object),
+    ByRef errorMessage As String) As DataTable
+
+        'Validar que la consulta no esté vacía
+        If String.IsNullOrWhiteSpace(query) Then
+            Throw New ArgumentException("La consulta no puede estar vacía")
+        End If
+
+        Dim dt As New DataTable()
+
+        Using conn As SqlConnection = GetConnection()
+            Using cmd As New SqlCommand(query, conn)
+                If parameters IsNot Nothing Then
+                    For Each p In parameters
+                        cmd.Parameters.AddWithValue(p.Key, p.Value)
+                    Next
+                End If
+
+                Try
+                    Using adapter As New SqlDataAdapter(cmd)
+                        adapter.Fill(dt)
+                    End Using
+
+                    Return dt
+                Catch ex As Exception
+                    errorMessage = "Error al ejecutar la consulta: " & ex.Message
+                End Try
+            End Using
+        End Using
+        Return Nothing
     End Function
 End Class
